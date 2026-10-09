@@ -4,14 +4,17 @@ import pymysql
 
 app = Flask(__name__)
 
-bucket_name="student-photo-demo-gopu"
+bucket_name="binta-student-photos-2026"
 
-db=pymysql.connect(
-host="100.57.165.48",
-port="3306",
-user="admin",
-password="Admin123",
-database="studentdb"
+import os
+
+db = pymysql.connect(
+    host=os.environ["DB_HOST"],
+    port=3306,
+    user=os.environ["DB_USER"],
+    password=os.environ["DB_PASSWORD"],
+    database=os.environ["DB_NAME"],
+    connect_timeout=10
 )
 
 @app.route('/')
@@ -25,9 +28,13 @@ def register():
     email=request.form['email']
     course=request.form['course']
 
-    photo=request.files['photo']
+    
+    photo = request.files.get('photo')
 
-    s3=boto3.client('s3')
+    if not photo or not photo.filename:
+        return "Please select a photo before registering.", 400
+
+    s3 = boto3.client('s3')
 
     s3.upload_fileobj(
         photo,
@@ -35,7 +42,8 @@ def register():
         photo.filename
     )
 
-    photo_url=f"https://{bucket_name}.s3.amazonaws.com/{photo.filename}"
+    photo_url = f"https://{bucket_name}.s3.amazonaws.com/{photo.filename}"
+
 
     cursor=db.cursor()
 
